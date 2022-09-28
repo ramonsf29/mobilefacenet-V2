@@ -167,7 +167,8 @@ def main(args):
         learning_rate = tf.compat.v1.train.exponential_decay(learning_rate_placeholder, global_step,
                                                    args.learning_rate_decay_epochs * args.epoch_size,
                                                    args.learning_rate_decay_factor, staircase=True)
-        tf.summary.scalar('learning_rate', tf.squeeze(learning_rate))
+
+        #tf.summary.scalar('learning_rate', tf.squeeze(learning_rate))
 
         # Calculate the average cross entropy loss across the batch
         cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -179,27 +180,27 @@ def main(args):
         accuracy = tf.reduce_mean(correct_prediction)
 
         # Calculate the total losses
-        regularization_losses = tf.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
+        regularization_losses = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
         total_loss = tf.add_n([cross_entropy_mean] + regularization_losses, name='total_loss')
 
         # Build a Graph that trains the model with one batch of examples and updates the model parameters
         train_op = facenet.train(total_loss, global_step, args.optimizer,
-                                 learning_rate, args.moving_average_decay, tf.global_variables(), args.log_histograms)
+                                 learning_rate, args.moving_average_decay, tf.compat.v1.global_variables(), args.log_histograms)
 
         # Create a saver
-        saver = tf.train.Saver(tf.trainable_variables(), max_to_keep=3)
+        saver = tf.compat.v1.train.Saver(tf.compat.v1.trainable_variables(), max_to_keep=3)
 
         # Build the summary operation based on the TF collection of Summaries.
-        summary_op = tf.summary.merge_all()
+        summary_op = tf.compat.v1.summary.merge_all()
 
         # Start running operations on the Graph.
-        gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=args.gpu_memory_fraction)
-        sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, log_device_placement=False))
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
-        summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
+        gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=args.gpu_memory_fraction)
+        sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options, log_device_placement=False))
+        sess.run(tf.compat.v1.global_variables_initializer())
+        sess.run(tf.compat.v1.local_variables_initializer())
+        summary_writer = tf.compat.v1.summary.FileWriter(log_dir, sess.graph)
         coord = tf.train.Coordinator()
-        tf.train.start_queue_runners(coord=coord, sess=sess)
+        tf.compat.v1.train.start_queue_runners(coord=coord, sess=sess)
 
         with sess.as_default():
 
@@ -274,7 +275,7 @@ def main(args):
 
                 print('Saving statistics')
                 with h5py.File(stat_file_name, 'w') as f:
-                    for key, value in stat.iteritems():
+                    for key, value in stat.items():
                         f.create_dataset(key, data=value)
 
     return model_dir
@@ -377,7 +378,7 @@ def train(args, sess, epoch, image_list, label_list, index_dequeue_op, enqueue_o
         batch_number += 1
         train_time += duration
     # Add validation loss and accuracy to summary
-    summary = tf.Summary()
+    summary = tf.compat.v1.Summary()
     # pylint: disable=maybe-no-member
     summary.value.add(tag='time/total', simple_value=train_time)
     summary_writer.add_summary(summary, global_step=step_)
@@ -572,7 +573,7 @@ def parse_arguments(argv):
                         help='The optimization algorithm to use', default='ADAGRAD')
     parser.add_argument('--learning_rate', type=float,
                         help='Initial learning rate. If set to a negative value a learning rate ' +
-                             'schedule can be specified in the file "learning_rate_schedule.txt"', default=1)#0.1)
+                             'schedule can be specified in the file "learning_rate_schedule.txt"', default=0.1)
     parser.add_argument('--learning_rate_decay_epochs', type=int,
                         help='Number of epochs between learning rate decay.', default=100)
     parser.add_argument('--learning_rate_decay_factor', type=float,
